@@ -1,0 +1,11 @@
+
+primer2.elf:     formato del fichero elf32-avr
+
+
+Desensamblado de la sección .text:
+
+00000000 <__ctors_end>:
+   0:	00 00       	nop
+   2:	00 00       	nop
+   4:	00 00       	nop
+   6:	fc cf       	rjmp	.-8      	; 0x0 <__ctors_end>

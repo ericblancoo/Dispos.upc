@@ -1,0 +1,65 @@
+DDRB_o = 0x4
+PORTB_o = 0x5
+PORTD_o = 0x0b
+DDRD_o = 0x0a
+UDR0 = 0xc6
+UBRR0H = 0xc5
+UBRR0L = 0xc4
+UCSR0C = 0xc2
+UCSR0B = 0xC1
+UCSR0A = 0xC0
+	
+.global main
+/* rutina de recepció de bytes, el valor es recull al registre r16 */
+rx:
+	lds r16,UCSR0A /* carreguem al r16 el valor del UCSR0A */
+	sbrs r16,7 /* comprovem el bit de major pes (RXC0) i si és 1 fem +2 posicions(lds), si és 0 +1 posició(rjmp) || l'RXC0 és el bit del flag que indica si encara falta informació per llegir en el buffer; si és 1 vol dir que encarà no s'ha llegit tot.  */
+	rjmp rx /* si la el RXC0 és 0 aleshores ja hem llegit tot i per tant, ens quedem en bucle esperant fins que es dongui el cas en que quedin coses per llegir */
+	lds r16,UDR0 /* carreguem al r16 el valor del UDR0 */
+	ret
+
+/* rutina de transmissió de byte, el valor a transmetre està al registre r16 */
+tx:
+	lds r17,UCSR0A /* carreguem al r16 el valor del UCSR0A */
+	sbrs r17,5 /* Comprovem si el registre de transmisió està llest per rebre data (1) -> Si esta llest, pasem al sts, sino, ens quedem en bucle al rjmp. */
+	rjmp tx
+	rcall check_L
+	sts UDR0,r16 /* carreguem el valor a transmetre al UDR0 */
+	ret
+check_L:
+	cpi r16, 0b01101100 /* l */
+	breq led_on
+	cpi r16, 0b01001100
+	breq led_on
+	rcall led_off
+	ret
+led_on:
+	sbi PORTB_o, 0x5
+	ret
+led_off:
+	cbi PORTB_o, 0x5
+	ret
+main:
+	/* set baud rate a 9600*/
+	ldi r16, 0
+	sts UBRR0H,r16 /* carreguem un 0 al UBRR0H on els 4 últims bits seràn els de major pes juntament amb els 8 seguents del UBRR0L, que formaran un bus de 12 bits */
+	ldi r16, 103 /* 01100111 */
+	sts UBRR0L,r16 /* El bus de 12 bits que ens queda serà= 0b000001100111, la velocitat de transmisió, ja que per als 16 MHz posant el valor 103 aconseguim una velocitat de transmisió de 9600 bps (pag 199) */
+	/* set frame format */
+	/* tot i que el valor dels registres després d’un reset ja és correcte (asíncron, 8 bits de dades, 1 bit de parada, sense paritat, velocitat normal, comunicació no multiprocessor) assegurem aquesta configuració escrivint el valor als registres*/
+	ldi r16, 0b00100000 /* BIT 7 = flag per si encara queda informació per llegir (1). BIT 6 = flag per si el registre s'ha transmés correctament (1). BIT 5 = flag que ens indica si el buffer de transmissió (UDR0) està llest per rebre nova informació (1). BIT 4 = flag que ens indica si hi ha hagut un error de fotograma (1). BIT 3 = flag pel desbordament de dades (1). BIT 2 = detecta un error de paritat (1). BIT 1 = serveix per utiitzar operacions sincrones posant-ho a 0 o asincrones amb 1 i augmentant la velocitat de transmisió. BIT 0 = habilitació del Multi-processor Communication mode (1). */
+	sts UCSR0A,r16 /* preparem el buffer de transmisió per rebre noves dades */
+	ldi r16, 0b00000110 /* BIT 7 i 6 = Asynchronous USART (00, pag 202). BIT 5 i 4 = Parity mode disabled (00, pag 203). BIT 3 = nombre de stop bits que inserta el transmissor (0->1 bit, 1-> 2 bits). BIT 2 i 1 = + UCSZ02 (del registre USCR0B) + UCSZ01 + UCSZ00  = 011 -> 8-bit character size (pag 203). BIT 0 = clock polarity, only writte 1 when using synchronous mode.  */
+	sts UCSR0C,r16
+	/* enable rx, tx, sense interrupcions */
+	ldi r16, 0b00011000 /* BIT 7 = habilitació de la interrupció del RXC0 Flag (1). BIT 6 = habilitació de la interrupció del TXC0 Flag (1). BIT 5 = habilitació de la interrupció del UDRE0 Flag (1). BIT 4 = Habilita el receptor USART (1). BIT 3 = Habilita el transmissor USART (1). BIT 2 = Nombre de data bit junt amb els demes bits del UCSR0C. BIT 1 = És el novè bit rebut i s'ha de llegir abans de llegir els bits baixos d'UDR0. BIT 0 = És el novè bit a transmetre i s'ha d'escriure abans dels bits baixos d'UDR0 */
+	sts UCSR0B,r16
+	/* configuració dels pins */
+	ldi r16,0b00100000
+	out DDRB_o, r16
+	ldi r16,0b00000010
+	out DDRD_o,r16
+loop:
+	call rx
+	call tx
+	rjmp loop

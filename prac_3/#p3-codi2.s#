@@ -1,0 +1,22 @@
+
+
+wait3: ldi r18,16
+wait2: ldi r17,0xFF 
+wait1: subi r17,0x01 
+brne wait1 
+subi r18,0x01 
+brne wait 2
+ret
+
+main:
+.set DDRB_o , 0x4 
+.set PINB, 0x03
+
+OUT DDRB_o, 0xFF
+
+loop:
+SBI PINB, 0x0 | toggle
+rcall waitabit	    | esperar 16M / 600/ 2  
+SBI PINB, 0x4 | toggle 
+rcall waitabit
+rjmp loop

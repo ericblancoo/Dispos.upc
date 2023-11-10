@@ -1,0 +1,31 @@
+/* segon.s, usa una macro */
+.set DDRB_o , 0x4
+.equ PORTB_o , 0x5
+pinb = 0x03
+
+waitabit:
+	ldi r18,17
+wait2:
+	ldi r17,0xFF
+wait1:
+	subi r17,0x01
+	brne wait1
+	subi r18,0x01
+	brne wait2
+	sbi pinb, 0x0
+	subi r20,1
+	brne waitabit
+	ret
+	
+	
+.global main
+main:
+	ldi r23, 0xFF
+	ldi r24, 0x00
+	ldi r16,0x1
+	out DDRB_o,r23
+loop:
+	ldi r20, 0xFF
+	rcall waitabit
+	SBI pinb, 0x05
+	rjmp loop /* loop forever */

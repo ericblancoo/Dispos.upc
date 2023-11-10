@@ -1,0 +1,71 @@
+/* · Mirem el pin cada segon
+	
+	si no polsem led --> led canvia 
+	si el polsem     --> led canvia
+
+inici:	 led off
+*/
+
+/*DEFINICIONS*/
+DDRB_o = 0x4
+DDRD_o = 0x0A
+PORTB_o = 0x5
+PORTD_o = 0x0B
+PINB = 0x3
+PIND = 0x9
+/*subrutines*/
+
+wait:
+	ldi r16, 82
+wait3:
+	ldi r17, 255
+wait2:
+	ldi r18, 255
+wait1:
+	subi r18, 0x01
+	brne wait1
+	subi r17, 0x01
+	brne wait2
+	subi r16, 0x01
+	brne wait3
+	
+	ret
+	
+led_on:
+	sbi PORTB_o, 0x05 /*posa la pota 13 (led)= 1*/
+	ret
+led_off:
+	cbi PORTB_o, 0x05 /*posa la pota 13 (led)= 0*/
+	ret
+led_toggle:
+	sbi PINB, 0x05 /*fa toggle de la pota 13 (led) 1/0 */
+	ret
+p_polsat: /*Z --> 1: polsat /_____/ 0: no polsat*/
+	in r23, PIND
+	and r23, r24
+/* CODI */
+.global main
+main:
+	/*inicialitzacions*/
+
+	/*led (estat inicial)  == off*/
+	ldi r24, 0b00010000
+	ldi r22, 0x0
+	ldi r21, 0x00
+	ldi r20, 0xFF
+	out DDRB_o, r20 /*definim set de potes B com a entrada*/
+	out DDRD_o, r21 /*definim set de potes D com a sortida*/
+	CALL led_off
+	/* inicialitzar pull up*/
+	out 0x35, r22 /*---> activem pull up posant el bit PUD a 0*/
+	out PORTD_o, 0b --> mirar que pin es el del botò al muntar la placa
+	
+	
+
+loop: 
+	CALL wait
+	RCALL p_polsat
+	BREQ loop
+	RCALL led_toggle
+	RJMP loop          /*¡¡¡¡¡acabar de mirar el loop y el p_polsat!!!!!*/
+	

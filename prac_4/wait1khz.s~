@@ -1,0 +1,10 @@
+wait1khz:
+	LDI r16, 0xFF
+wait2:
+	LDI r17, 16
+wait1:	
+	SUBI r16, 0x01
+		BRNE wait1
+	SUBI r17, 0x01
+		BRNE wait2
+	RET

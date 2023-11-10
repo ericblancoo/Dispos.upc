@@ -1,0 +1,32 @@
+DDRB_o = 0x4
+PORTB_o = 0x5
+PINB = 0x3
+	
+waitabit:
+	ldi r18,17
+wait2:
+	ldi r17,0xFF
+wait1:
+	subi r17,0x01
+	brne wait1
+	subi r18,0x01
+	brne wait2
+	sbi PINB, 0x0
+	subi r20,1
+	brne waitabit
+	ret
+	
+	
+.global main
+main:
+	ldi r23, 0xFF
+	ldi r24, 0x00
+	ldi r16,0x1
+	out DDRB_o,r23
+loop:
+	ldi r20, 255
+	rcall waitabit
+	ldi r20, 45
+	rcall waitabit
+	SBI PINB, 0x5
+	rjmp loop /* loop forever */

@@ -1,0 +1,41 @@
+.set DDRB_o , 0x4
+.equ PORTB_o , 0x5
+DDRD_o = 0x0a
+PORTD_o = 0x0b
+TCCR0A_o = 0x24
+TCCR0B_o = 0x25
+OCR0A_o = 0x27
+
+	
+.global main
+waitabit: ldi r19,41 /*subrutina feta en anteriors practiques que fan un bucle d'espera*/
+wait3: ldi r18,0xFF
+wait2: ldi r17,0xFF
+wait1: subi r17,0x01
+	brne wait1
+	subi r18,0x01
+	brne wait2
+	subi r19,0x01
+	brne wait3
+	ret
+	
+main: 	ldi r16,0b01000000
+	out DDRD_o,r16 /**/
+	ldi r16,0b00000000
+	out PORTD_o,r16/**/
+	ldi r16,124
+	out OCR0A_o,r16 /*definim limit timer */
+	ldi r16,0b01000010
+	out TCCR0A_o,r16  /*definim prescaler*/
+	ldi r16,0b00000011
+	out TCCR0B_o,r16 
+	
+loop: call waitabit
+	in r20,TCCR0A_o 
+	cbr r20,0b01000000
+	out TCCR0A_o,r20
+	call waitabit
+	in r20,TCCR0A_o
+	sbr r20,0b01000000
+	out TCCR0A_o,r20
+	rjmp loo
